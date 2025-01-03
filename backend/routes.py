@@ -35,7 +35,10 @@ def count():
 ######################################################################
 @app.route("/picture", methods=["GET"])
 def get_pictures():
-    pass
+    if data:
+        return jsonify(data), 200
+    return jsonify({"message": "No pictures available"}), 404
+    
 
 ######################################################################
 # GET A PICTURE
@@ -44,7 +47,11 @@ def get_pictures():
 
 @app.route("/picture/<int:id>", methods=["GET"])
 def get_picture_by_id(id):
-    pass
+    picture = next((pic for pic in data if pic.get("id") == id), None)
+    if picture:
+        return jsonify(picture), 200
+    return jsonify({"message": "Picture not found"}), 404
+
 
 
 ######################################################################
@@ -52,7 +59,11 @@ def get_picture_by_id(id):
 ######################################################################
 @app.route("/picture", methods=["POST"])
 def create_picture():
-    pass
+    picture = request.get_json()
+    if any(pic.get("id") == picture.get("id") for pic in data):
+        return jsonify({"Message": f"picture with id {picture['id']} already present"}), 302
+    data.append(picture)
+    return jsonify(picture), 201
 
 ######################################################################
 # UPDATE A PICTURE
@@ -61,11 +72,30 @@ def create_picture():
 
 @app.route("/picture/<int:id>", methods=["PUT"])
 def update_picture(id):
-    pass
+    updated_picture = request.get_json()
+    for i, pic in enumerate(data):
+        if pic.get("id") == id:
+            data[i].update(updated_picture)
+            return jsonify(data[i]), 200
+    return jsonify({"message": "picture not found"}), 404
 
 ######################################################################
 # DELETE A PICTURE
 ######################################################################
 @app.route("/picture/<int:id>", methods=["DELETE"])
 def delete_picture(id):
-    pass
+    # Find the picture with the given ID
+    picture = next((pic for pic in data if pic["id"] == id), None)
+    
+    if picture:
+        # Remove the picture if found
+        data.remove(picture)
+        
+        # Save the updated data back to the JSON file
+        with open(json_url, "w") as file:
+            json.dump(data, file, indent=4)
+        
+        return '', 204  # No content, successful deletion
+    else:
+        # If the picture is not found, return a 404 error
+        return jsonify({"message": "picture not found"}), 404
